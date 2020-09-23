@@ -1,0 +1,84 @@
+---
+title: "Homework 2"
+author: "Jeffrey Liang"
+date: "9/23/2020"
+output: github_document
+---
+```{r setup ,echo = F, message= F}
+library(tidyverse)
+```
+
+# Problem 1 
+
+## Load Wheel data
+```{r load_whell_data, warning=F, message=FALSE}
+data_collection = c()
+for (i in c(1:3)){
+  data_collection[[i]] = 
+    readxl::read_excel(
+      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep=''),
+      skip = 1,
+      sheet = i
+    ) %>% 
+    janitor::clean_names() %>% 
+    select( -starts_with('X1'))
+}
+
+wheel_df = bind_rows(data_collection)
+
+preci_collection = c()
+for (i in c(4:9)){
+  preci_collection[[i]] = 
+    readxl::read_excel(
+      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep=''),
+      skip = 1,
+      sheet = i
+    ) %>% 
+    janitor::clean_names() %>% 
+    mutate(year = 2020 + 3 -i)
+}
+
+preci_df = bind_rows(preci_collection)
+
+rm(data_collection,preci_collection)
+```
+
+
+## Clean Wheel data
+
+```{r clean_data}
+wheel_df = #clean wheel
+  wheel_df %>% 
+  filter(
+    #!grep(" Total",get('month')), #this command return vector with null row, so the data can't subset
+    !str_detect(get("month")," Total"),
+    !is.na(get("dumpster"))
+    ) %>% 
+  mutate(sports_balls = 
+           as.integer(round(get("sports_balls")))
+         )
+tail(wheel_df)
+```
+
+## Clean precipitation data
+```{r}
+preci_df = 
+  preci_df %>%
+  filter(!is.na(get("month")),
+         get('year') %in% c(2018,2017)
+         ) %>% 
+  mutate(month =
+           apply( # this is the apply() function in R, need to specific dim before giving function, weird
+             as.matrix(           # as.matrix is very important here, cuz pull() or get() have NULL dim()
+             get("month")
+             ), 1,
+             function(x) month.name[[x]]) # this is how to write lambda in R, clean
+  )
+tail(preci_df)
+```
+
+
+## Write something about this data
+ 
+\newpage
+# Problem 2
