@@ -2,7 +2,8 @@
 title: "Homework 2"
 author: "Jeffrey Liang"
 date: "9/23/2020"
-output: github_document
+output: 
+ github_document
 ---
 ```{r setup ,echo = F, message= F}
 library(tidyverse)
@@ -12,7 +13,7 @@ library(tidyverse)
 
 ## Load Wheel data
 ```{r load_whell_data, warning=F, message=FALSE}
-data_collection = c()
+data_collection = c() #Load the wheel data
 for (i in c(1:3)){
   data_collection[[i]] = 
     readxl::read_excel(
@@ -26,7 +27,7 @@ for (i in c(1:3)){
 
 wheel_df = bind_rows(data_collection)
 
-preci_collection = c()
+preci_collection = c() # load the precipitation data in wheel
 for (i in c(4:9)){
   preci_collection[[i]] = 
     readxl::read_excel(
@@ -73,7 +74,8 @@ preci_df =
              get("month")
              ), 1, # specific dim()
              function(x) month.name[[x]]) # this is how to write lambda in R, clean
-  )
+  ) %>% 
+  relocate(year)
 tail(preci_df)
 ```
 
@@ -85,6 +87,7 @@ tail(preci_df)
 
 ## load data
 ```{r load_nyc,message=F,warning=F}
+rm(list=ls())
 read_nyc = function(){
 return_data = read_csv(
   paste(here::here(),"/data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",sep = '')
@@ -131,18 +134,51 @@ nyc_df =
     names_prefix = 'route'
   ) %>% 
   mutate(entry = if_else(apply(as.matrix(entry),1,str_to_lower)=="yes",TRUE,FALSE,NA)) %>% 
-  select(station_id_type:station_longitude,route_served,entry,vending,entrance_type,ada)
-skimr::skim_without_charts(nyc_df)
+  select(station_id_type:station_longitude,route_served,vending,entry,entrance_type,ada) %>% 
+  mutate(route_served = as.factor(route_served),vending = if_else(vending=="YES",T,F,NA))
+  skimr::skim_without_charts(nyc_df)
 ```
-This NYC's metro system data is a `r nrow(read_nyc())` $\times$ `r ncol(read_nyc())` size data, describing NYC metro system's `r paste(names(read_nyc()),sep = ',')`
+This NYC's metro system data is a `r nrow(read_nyc())` x `r ncol(read_nyc())` size data, describing NYC metro system's **_`r paste(names(read_nyc()),sep = ',')`_**.
 
-Write a short paragraph about this dataset – explain briefly what variables the dataset contains, describe your data cleaning steps so far, and give the dimension (rows x columns) of the resulting dataset. Are these data tidy?
+The data is not beautiful in all sense: 
 
-Answer the following questions using these data:
+1. It has route all over the place and name and line separated instead of treating as unique indentity;
+1. staff hours including 3 types of information and etc. 
 
-How many distinct stations are there? Note that stations are identified both by name and by line (e.g. 125th St A/B/C/D; 125st 1; 125st 4/5); the distinct function may be useful here.
-How many stations are ADA compliant?
-What proportion of station entrances / exits without vending allow entrance?
+So the first step I did to the data is to make the name unique. Then I took the information in the route*: ffirst dealed with route 8 to 11 which not consistant with the other line format of data and put them into route_served variable using pivot_longer(). Followed with changing values in _entrance_ variable to boolean factors with if_else() function. And finally selecting the required variables using select().
 
+The outcome data after piping is a dataset of `r nrow(nyc_df)` x `r ncol(nyc_df)` size dataset, with variables of **_`r names(nyc_df)`_**, and the data with following properties:
 
+* there's `r n_distinct(pull(nyc_df,"station_id"))` unique station (including names and line) in this data;
+* Of `r n_distinct(pull(nyc_df,"station_id"))`, `r sum(pull(distinct(nyc_df,station_id,.keep_all = TRUE),'ada'))` are ADA compliant stations;
+* Of `r n_distinct(pull(nyc_df,"station_id"))`, `r 1- round(sum(distinct(nyc_df,station_id,.keep_all = TRUE)$vending)/nrow(distinct(nyc_df,station_id,.keep_all = TRUE)),2)` station entrance/exits without vending allow entrance.
+
+\newpage
+# Problem 3
+## Load data
+```{r load_five, message=F,warning=F}
+rm(list=ls())
+read_five = function(data_name_index = 1){
+  data_name = str_c(c("pols-month",'unemployment',"snp"),".csv")
+  read_data = 
+    read_csv(paste(here::here(),"/data/fivethirtyeight_datasets/",data_name[[data_name_index]],sep=''),
+             ) %>% 
+    janitor::clean_names()
+}
+
+#load month data
+pols_month = read_five(1) %>% 
+  separate(mon,c("year","month",'day'),"-") %>% 
+  mutate(across(.cols = year:day,as.integer),
+         month = apply(as.matrix(month),1,function(x) month.name[[x]])) %>% 
+  pivot_longer(
+    c("prez_gop","prez_dem"),
+    names_to = "president",
+    values_to = "president_boolean",
+    names_prefix="prez_"
+  ) %>% 
+  filter(president_boolean == 1) %>% 
+  select(-c(president_boolean,day))
+str(pols_month)
+```
 

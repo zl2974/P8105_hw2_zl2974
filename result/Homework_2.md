@@ -8,7 +8,7 @@ Jeffrey Liang
 ## Load Wheel data
 
 ``` r
-data_collection = c()
+data_collection = c() #Load the wheel data
 for (i in c(1:3)){
   data_collection[[i]] = 
     readxl::read_excel(
@@ -22,7 +22,7 @@ for (i in c(1:3)){
 
 wheel_df = bind_rows(data_collection)
 
-preci_collection = c()
+preci_collection = c() # load the precipitation data in wheel
 for (i in c(4:9)){
   preci_collection[[i]] = 
     readxl::read_excel(
@@ -83,19 +83,20 @@ preci_df =
              get("month")
              ), 1, # specific dim()
              function(x) month.name[[x]]) # this is how to write lambda in R, clean
-  )
+  ) %>% 
+  relocate(year)
 tail(preci_df)
 ```
 
     ## # A tibble: 6 x 3
-    ##   month     total  year
-    ##   <chr>     <dbl> <dbl>
-    ## 1 July       7.09  2017
-    ## 2 August     4.44  2017
-    ## 3 September  1.95  2017
-    ## 4 October    0     2017
-    ## 5 November   0.11  2017
-    ## 6 December   0.94  2017
+    ##    year month     total
+    ##   <dbl> <chr>     <dbl>
+    ## 1  2017 July       7.09
+    ## 2  2017 August     4.44
+    ## 3  2017 September  1.95
+    ## 4  2017 October    0   
+    ## 5  2017 November   0.11
+    ## 6  2017 December   0.94
 
 ## Write something about this data
 
@@ -104,6 +105,7 @@ tail(preci_df)
 ## load data
 
 ``` r
+rm(list=ls())
 read_nyc = function(){
 return_data = read_csv(
   paste(here::here(),"/data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",sep = '')
@@ -140,8 +142,9 @@ nyc_df =
     names_prefix = 'route'
   ) %>% 
   mutate(entry = if_else(apply(as.matrix(entry),1,str_to_lower)=="yes",TRUE,FALSE,NA)) %>% 
-  select(station_id_type:station_longitude,route_served,entry,vending,entrance_type,ada)
-skimr::skim_without_charts(nyc_df)
+  select(station_id_type:station_longitude,route_served,vending,entry,entrance_type,ada) %>% 
+  mutate(route_served = as.factor(route_served),vending = if_else(vending=="YES",T,F,NA))
+  skimr::skim_without_charts(nyc_df)
 ```
 
 |                                                  |         |
@@ -151,8 +154,9 @@ skimr::skim_without_charts(nyc_df)
 | Number of columns                                | 10      |
 | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_   |         |
 | Column type frequency:                           |         |
-| character                                        | 6       |
-| logical                                          | 2       |
+| character                                        | 4       |
+| factor                                           | 1       |
+| logical                                          | 3       |
 | numeric                                          | 2       |
 | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |         |
 | Group variables                                  | None    |
@@ -166,14 +170,19 @@ Data summary
 | station\_id\_type |          0 |              1 |   4 |   4 |     0 |         2 |          0 |
 | station\_id       |          0 |              1 |   4 |  39 |     0 |       391 |          0 |
 | division          |          0 |              1 |   3 |   3 |     0 |         3 |          0 |
-| route\_served     |          0 |              1 |   1 |   2 |     0 |        11 |          0 |
-| vending           |          0 |              1 |   2 |   3 |     0 |         2 |          0 |
 | entrance\_type    |          0 |              1 |   4 |   9 |     0 |         7 |          0 |
+
+**Variable type: factor**
+
+| skim\_variable | n\_missing | complete\_rate | ordered | n\_unique | top\_counts                          |
+| :------------- | ---------: | -------------: | :------ | --------: | :----------------------------------- |
+| route\_served  |          0 |              1 | FALSE   |        11 | 1: 3736, 10: 3736, 11: 3736, 2: 3736 |
 
 **Variable type: logical**
 
 | skim\_variable | n\_missing | complete\_rate | mean | count                  |
 | :------------- | ---------: | -------------: | ---: | :--------------------- |
+| vending        |          0 |              1 | 0.90 | TRU: 37070, FAL: 4026  |
 | entry          |          0 |              1 | 0.94 | TRU: 38566, FAL: 2530  |
 | ada            |          0 |              1 | 0.25 | FAL: 30800, TRU: 10296 |
 
@@ -184,24 +193,75 @@ Data summary
 | station\_latitude  |          0 |              1 |   40.73 | 0.07 |   40.58 |   40.69 |   40.73 |   40.77 |   40.90 |
 | station\_longitude |          0 |              1 | \-73.94 | 0.06 | \-74.03 | \-73.99 | \-73.96 | \-73.91 | \-73.76 |
 
-This NYC’s metro system data is a 1868 \(\times\) 32 size data,
-describing NYC metro system’s division, line, station\_name,
-station\_latitude, station\_longitude, route1, route2, route3, route4,
-route5, route6, route7, route8, route9, route10, route11,
-entrance\_type, entry, exit\_only, vending, staffing, staff\_hours, ada,
-ada\_notes, free\_crossover, north\_south\_street, east\_west\_street,
-corner, entrance\_latitude, entrance\_longitude, station\_location,
-entrance\_location
+This NYC’s metro system data is a 1868 x 32 size data, describing NYC
+metro system’s ***division, line, station\_name, station\_latitude,
+station\_longitude, route1, route2, route3, route4, route5, route6,
+route7, route8, route9, route10, route11, entrance\_type, entry,
+exit\_only, vending, staffing, staff\_hours, ada, ada\_notes,
+free\_crossover, north\_south\_street, east\_west\_street, corner,
+entrance\_latitude, entrance\_longitude, station\_location,
+entrance\_location***.
 
-Write a short paragraph about this dataset – explain briefly what
-variables the dataset contains, describe your data cleaning steps so
-far, and give the dimension (rows x columns) of the resulting dataset.
-Are these data tidy?
+The data is not beautiful in all sense:
 
-Answer the following questions using these data:
+1.  It has route all over the place and name and line separated instead
+    of treating as unique indentity;
+2.  staff hours including 3 types of information and etc.
 
-How many distinct stations are there? Note that stations are identified
-both by name and by line (e.g. 125th St A/B/C/D; 125st 1; 125st 4/5);
-the distinct function may be useful here. How many stations are ADA
-compliant? What proportion of station entrances / exits without vending
-allow entrance?
+So the first step I did to the data is to make the name unique. Then I
+took the information in the route\*: ffirst dealed with route 8 to 11
+which not consistant with the other line format of data and put them
+into route\_served variable using pivot\_longer(). Followed with
+changing values in *entrance* variable to boolean factors with
+if\_else() function. And finally selecting the required variables using
+select().
+
+The outcome data after piping is a dataset of 41096 x 10 size dataset,
+with variables of ***station\_id\_type, station\_id, division,
+station\_latitude, station\_longitude, route\_served, vending, entry,
+entrance\_type, ada***, and the data with following properties:
+
+  - there’s 391 unique station (including names and line) in this data;
+  - Of 391, 63 are ADA compliant stations;
+  - Of 391, 0.03 station entrance/exits without vending allow entrance.
+
+# Problem 3
+
+## Load data
+
+``` r
+rm(list=ls())
+read_five = function(data_name_index = 1){
+  data_name = str_c(c("pols-month",'unemployment',"snp"),".csv")
+  read_data = 
+    read_csv(paste(here::here(),"/data/fivethirtyeight_datasets/",data_name[[data_name_index]],sep=''),
+             ) %>% 
+    janitor::clean_names()
+}
+
+#load month data
+pols_month = read_five(1) %>% 
+  separate(mon,c("year","month",'day'),"-") %>% 
+  mutate(across(.cols = year:day,as.integer),
+         month = apply(as.matrix(month),1,function(x) month.name[[x]])) %>% 
+  pivot_longer(
+    c("prez_gop","prez_dem"),
+    names_to = "president",
+    values_to = "president_boolean",
+    names_prefix="prez_"
+  ) %>% 
+  filter(president_boolean == 1) %>% 
+  select(-c(president_boolean,day))
+str(pols_month)
+```
+
+    ## tibble [817 × 9] (S3: tbl_df/tbl/data.frame)
+    ##  $ year     : int [1:817] 1947 1947 1947 1947 1947 1947 1947 1947 1947 1947 ...
+    ##  $ month    : chr [1:817] "January" "February" "March" "April" ...
+    ##  $ gov_gop  : num [1:817] 23 23 23 23 23 23 23 23 23 23 ...
+    ##  $ sen_gop  : num [1:817] 51 51 51 51 51 51 51 51 51 51 ...
+    ##  $ rep_gop  : num [1:817] 253 253 253 253 253 253 253 253 253 253 ...
+    ##  $ gov_dem  : num [1:817] 23 23 23 23 23 23 23 23 23 23 ...
+    ##  $ sen_dem  : num [1:817] 45 45 45 45 45 45 45 45 45 45 ...
+    ##  $ rep_dem  : num [1:817] 198 198 198 198 198 198 198 198 198 198 ...
+    ##  $ president: chr [1:817] "dem" "dem" "dem" "dem" ...
