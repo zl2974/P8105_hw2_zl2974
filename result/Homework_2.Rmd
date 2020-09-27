@@ -53,7 +53,7 @@ wheel_df = #clean wheel
   filter(
     #!grep(" Total",get('month')), #this command return vector with null row, so the data can't subset
     !str_detect(get("month")," Total"),
-    !is.na(get("dumpster"))
+    !is.na(get("dumpster")) #Or drop_na(dumpster)
     ) %>% 
   mutate(sports_balls = 
            as.integer(round(get("sports_balls")))
@@ -74,7 +74,7 @@ preci_df =
              get("month")
              ), 1, # specific dim()
              function(x) month.name[[x]]) # this is how to write lambda in R, clean
-  ) %>% 
+  ) %>%  # OR use month = month.names[month], or create a tabel with order and then left join
   relocate(year)
 tail(preci_df)
 ```
@@ -169,16 +169,49 @@ read_five = function(data_name_index = 1){
 #load month data
 pols_month = read_five(1) %>% 
   separate(mon,c("year","month",'day'),"-") %>% 
-  mutate(across(.cols = year:day,as.integer),
-         month = apply(as.matrix(month),1,function(x) month.name[[x]])) %>% 
-  pivot_longer(
+  mutate(across(.cols = year:day,as.integer)) %>% 
+  left_join(tibble(month = 1:12,month_name = month.name)) %>% 
+  mutate(month = month_name) %>% 
+  select(-month_name) %>% 
+  pivot_longer( # OR mutate president = 
     c("prez_gop","prez_dem"),
     names_to = "president",
     values_to = "president_boolean",
     names_prefix="prez_"
   ) %>% 
   filter(president_boolean == 1) %>% 
-  select(-c(president_boolean,day))
+  select(-c(president_boolean,day)) %>% 
+  mutate(president = factor(president,levels = c('dem',"gop")))
 str(pols_month)
+
+#load and clean snp data
+snp_data = read_five(3) %>% 
+  separate(col = date,into = c("month","day","year"),"/") %>% 
+  select(-day) %>% 
+  mutate(across(.cols = year:month,as.numeric),
+         month = month.name[month]
+         ) %>% 
+  relocate(year,month)
+str(snp_data)
+
+#load unemployment data
+unemploy_data = read_five(2) %>% 
+  pivot_longer(
+    jan:dec,
+    names_to = "month",
+    values_to="unemploy_rate"
+  ) %>% 
+  mutate(month = apply(as.matrix(month),1,
+                       function(x) month.name[[
+                         match(x,str_to_lower(month.abb))
+                         ]]))
+str(unemploy_data)
+```
+## Join data
+```{r}
+five30eight = pols_month %>% 
+  left_join(snp_data, by = c("year","month")) %>% 
+  left_join(unemploy_data, by = c("year","month"))
+skimr::skim_without_charts(five30eight)
 ```
 

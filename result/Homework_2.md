@@ -47,7 +47,7 @@ wheel_df = #clean wheel
   filter(
     #!grep(" Total",get('month')), #this command return vector with null row, so the data can't subset
     !str_detect(get("month")," Total"),
-    !is.na(get("dumpster"))
+    !is.na(get("dumpster")) #Or drop_na(dumpster)
     ) %>% 
   mutate(sports_balls = 
            as.integer(round(get("sports_balls")))
@@ -83,7 +83,7 @@ preci_df =
              get("month")
              ), 1, # specific dim()
              function(x) month.name[[x]]) # this is how to write lambda in R, clean
-  ) %>% 
+  ) %>%  # OR use month = month.names[month], or create a tabel with order and then left join
   relocate(year)
 tail(preci_df)
 ```
@@ -242,16 +242,19 @@ read_five = function(data_name_index = 1){
 #load month data
 pols_month = read_five(1) %>% 
   separate(mon,c("year","month",'day'),"-") %>% 
-  mutate(across(.cols = year:day,as.integer),
-         month = apply(as.matrix(month),1,function(x) month.name[[x]])) %>% 
-  pivot_longer(
+  mutate(across(.cols = year:day,as.integer)) %>% 
+  left_join(tibble(month = 1:12,month_name = month.name)) %>% 
+  mutate(month = month_name) %>% 
+  select(-month_name) %>% 
+  pivot_longer( # OR mutate president = 
     c("prez_gop","prez_dem"),
     names_to = "president",
     values_to = "president_boolean",
     names_prefix="prez_"
   ) %>% 
   filter(president_boolean == 1) %>% 
-  select(-c(president_boolean,day))
+  select(-c(president_boolean,day)) %>% 
+  mutate(president = factor(president,levels = c('dem',"gop")))
 str(pols_month)
 ```
 
@@ -264,4 +267,91 @@ str(pols_month)
     ##  $ gov_dem  : num [1:817] 23 23 23 23 23 23 23 23 23 23 ...
     ##  $ sen_dem  : num [1:817] 45 45 45 45 45 45 45 45 45 45 ...
     ##  $ rep_dem  : num [1:817] 198 198 198 198 198 198 198 198 198 198 ...
-    ##  $ president: chr [1:817] "dem" "dem" "dem" "dem" ...
+    ##  $ president: Factor w/ 2 levels "dem","gop": 1 1 1 1 1 1 1 1 1 1 ...
+
+``` r
+#load and clean snp data
+snp_data = read_five(3) %>% 
+  separate(col = date,into = c("month","day","year"),"/") %>% 
+  select(-day) %>% 
+  mutate(across(.cols = year:month,as.numeric),
+         month = month.name[month]
+         ) %>% 
+  relocate(year,month)
+str(snp_data)
+```
+
+    ## tibble [787 × 3] (S3: tbl_df/tbl/data.frame)
+    ##  $ year : num [1:787] 2015 2015 2015 2015 2015 ...
+    ##  $ month: chr [1:787] "July" "June" "May" "April" ...
+    ##  $ close: num [1:787] 2080 2063 2107 2086 2068 ...
+
+``` r
+#load unemployment data
+unemploy_data = read_five(2) %>% 
+  pivot_longer(
+    jan:dec,
+    names_to = "month",
+    values_to="unemploy_rate"
+  ) %>% 
+  mutate(month = apply(as.matrix(month),1,
+                       function(x) month.name[[
+                         match(x,str_to_lower(month.abb))
+                         ]]))
+str(unemploy_data)
+```
+
+    ## tibble [816 × 3] (S3: tbl_df/tbl/data.frame)
+    ##  $ year         : num [1:816] 1948 1948 1948 1948 1948 ...
+    ##  $ month        : chr [1:816] "January" "February" "March" "April" ...
+    ##  $ unemploy_rate: num [1:816] 3.4 3.8 4 3.9 3.5 3.6 3.6 3.9 3.8 3.7 ...
+
+## Join data
+
+``` r
+five30eight = pols_month %>% 
+  left_join(snp_data, by = c("year","month")) %>% 
+  left_join(unemploy_data, by = c("year","month"))
+skimr::skim_without_charts(five30eight)
+```
+
+|                                                  |             |
+| :----------------------------------------------- | :---------- |
+| Name                                             | five30eight |
+| Number of rows                                   | 817         |
+| Number of columns                                | 11          |
+| \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_   |             |
+| Column type frequency:                           |             |
+| character                                        | 1           |
+| factor                                           | 1           |
+| numeric                                          | 9           |
+| \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |             |
+| Group variables                                  | None        |
+
+Data summary
+
+**Variable type: character**
+
+| skim\_variable | n\_missing | complete\_rate | min | max | empty | n\_unique | whitespace |
+| :------------- | ---------: | -------------: | --: | --: | ----: | --------: | ---------: |
+| month          |          0 |              1 |   3 |   9 |     0 |        12 |          0 |
+
+**Variable type: factor**
+
+| skim\_variable | n\_missing | complete\_rate | ordered | n\_unique | top\_counts        |
+| :------------- | ---------: | -------------: | :------ | --------: | :----------------- |
+| president      |          0 |              1 | FALSE   |         2 | gop: 427, dem: 390 |
+
+**Variable type: numeric**
+
+| skim\_variable | n\_missing | complete\_rate |    mean |     sd |      p0 |    p25 |     p50 |     p75 |    p100 |
+| :------------- | ---------: | -------------: | ------: | -----: | ------: | -----: | ------: | ------: | ------: |
+| year           |          0 |           1.00 | 1980.79 |  19.84 | 1947.00 | 1964.0 | 1981.00 | 1998.00 | 2015.00 |
+| gov\_gop       |          0 |           1.00 |   22.50 |   5.69 |   12.00 |   18.0 |   22.00 |   28.00 |   34.00 |
+| sen\_gop       |          0 |           1.00 |   46.10 |   6.40 |   32.00 |   42.0 |   46.00 |   51.00 |   56.00 |
+| rep\_gop       |          0 |           1.00 |  194.92 |  29.33 |  141.00 |  176.0 |  195.00 |  222.00 |  253.00 |
+| gov\_dem       |          0 |           1.00 |   27.16 |   5.93 |   17.00 |   22.0 |   28.00 |   32.00 |   41.00 |
+| sen\_dem       |          0 |           1.00 |   54.38 |   7.38 |   44.00 |   48.0 |   53.00 |   58.00 |   71.00 |
+| rep\_dem       |          0 |           1.00 |  244.94 |  31.46 |  188.00 |  211.0 |  250.00 |  268.00 |  301.00 |
+| close          |         36 |           0.96 |  475.43 | 544.07 |   17.05 |   84.3 |  140.64 |  947.28 | 2107.39 |
+| unemploy\_rate |         12 |           0.99 |    5.83 |   1.65 |    2.50 |    4.6 |    5.60 |    6.90 |   10.80 |
