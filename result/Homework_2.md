@@ -121,77 +121,43 @@ return(return_data)
 ``` r
 nyc_df = 
   read_nyc() %>% 
-  pivot_longer( #make unique names
-    cols = c(line,station_name),
-    names_to ='station_id_type',
-    values_to = "station_id",
-    names_prefix = "station_"
-  ) %>% 
-  relocate(station_id_type,station_id) %>% 
-  separate( #clean staff hour, just experiment
-    col = staff_hours,
-    into = c("staff_hours_start",'staff_hours_end','staff_hours_shift'),
-    sep = "[- ]"
-  ) %>% 
+  select(line:station_longitude,route1:route11,vending,entry,entrance_type,ada) %>% 
+  mutate(entry = if_else(
+    apply(as.matrix(entry),1,str_to_lower)=="yes",
+    TRUE,FALSE,NA),
+    vending = if_else(vending=="YES",T,F,NA)
+    )
+
+nyc_df_tidy = nyc_df %>% 
   mutate(across(matches('route'),as.character)) %>% #OR use across(matches("something",fun))
   relocate(route1:route11,.after = last_col()) %>% 
   pivot_longer( # clean route* variables to meaningful route variable
     cols = route1:route11, #route 8 is numeric
-    names_to = "route_served",
+    names_to = "route",
     values_to = 'route_value',
     names_prefix = 'route'
   ) %>% 
-  mutate(entry = if_else(apply(as.matrix(entry),1,str_to_lower)=="yes",TRUE,FALSE,NA)) %>% 
-  select(station_id_type:station_longitude,route_served,vending,entry,entrance_type,ada) %>% 
-  mutate(route_served = as.factor(route_served),vending = if_else(vending=="YES",T,F,NA))
-  skimr::skim_without_charts(nyc_df)
+  drop_na(route_value) %>%
+  mutate(
+    route_number = if_else(route_value %in% as.character(c(1:12)),route_value, ''),
+    route_name = if_else(route_number=='',route_value,''),
+    ) %>% 
+  select(-c(route_value,route))
+tail(nyc_df)
 ```
 
-|                                                  |         |
-| :----------------------------------------------- | :------ |
-| Name                                             | nyc\_df |
-| Number of rows                                   | 41096   |
-| Number of columns                                | 10      |
-| \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_   |         |
-| Column type frequency:                           |         |
-| character                                        | 4       |
-| factor                                           | 1       |
-| logical                                          | 3       |
-| numeric                                          | 2       |
-| \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |         |
-| Group variables                                  | None    |
-
-Data summary
-
-**Variable type: character**
-
-| skim\_variable    | n\_missing | complete\_rate | min | max | empty | n\_unique | whitespace |
-| :---------------- | ---------: | -------------: | --: | --: | ----: | --------: | ---------: |
-| station\_id\_type |          0 |              1 |   4 |   4 |     0 |         2 |          0 |
-| station\_id       |          0 |              1 |   4 |  39 |     0 |       391 |          0 |
-| division          |          0 |              1 |   3 |   3 |     0 |         3 |          0 |
-| entrance\_type    |          0 |              1 |   4 |   9 |     0 |         7 |          0 |
-
-**Variable type: factor**
-
-| skim\_variable | n\_missing | complete\_rate | ordered | n\_unique | top\_counts                          |
-| :------------- | ---------: | -------------: | :------ | --------: | :----------------------------------- |
-| route\_served  |          0 |              1 | FALSE   |        11 | 1: 3736, 10: 3736, 11: 3736, 2: 3736 |
-
-**Variable type: logical**
-
-| skim\_variable | n\_missing | complete\_rate | mean | count                  |
-| :------------- | ---------: | -------------: | ---: | :--------------------- |
-| vending        |          0 |              1 | 0.90 | TRU: 37070, FAL: 4026  |
-| entry          |          0 |              1 | 0.94 | TRU: 38566, FAL: 2530  |
-| ada            |          0 |              1 | 0.25 | FAL: 30800, TRU: 10296 |
-
-**Variable type: numeric**
-
-| skim\_variable     | n\_missing | complete\_rate |    mean |   sd |      p0 |     p25 |     p50 |     p75 |    p100 |
-| :----------------- | ---------: | -------------: | ------: | ---: | ------: | ------: | ------: | ------: | ------: |
-| station\_latitude  |          0 |              1 |   40.73 | 0.07 |   40.58 |   40.69 |   40.73 |   40.77 |   40.90 |
-| station\_longitude |          0 |              1 | \-73.94 | 0.06 | \-74.03 | \-73.99 | \-73.96 | \-73.91 | \-73.76 |
+    ## # A tibble: 6 x 19
+    ##   line  station_name station_latitude station_longitu… route1 route2 route3
+    ##   <chr> <chr>                   <dbl>            <dbl> <chr>  <chr>  <chr> 
+    ## 1 Whit… Simpson St               40.8            -73.9 2      5      <NA>  
+    ## 2 Whit… Wakefield-2…             40.9            -73.9 2      5      <NA>  
+    ## 3 Whit… Wakefield-2…             40.9            -73.9 2      5      <NA>  
+    ## 4 Whit… Wakefield-2…             40.9            -73.9 2      5      <NA>  
+    ## 5 Flus… 34 St Hudso…             40.8            -74.0 7      <NA>   <NA>  
+    ## 6 Flus… 34 St Hudso…             40.8            -74.0 7      <NA>   <NA>  
+    ## # … with 12 more variables: route4 <chr>, route5 <chr>, route6 <chr>,
+    ## #   route7 <chr>, route8 <dbl>, route9 <dbl>, route10 <dbl>, route11 <dbl>,
+    ## #   vending <lgl>, entry <lgl>, entrance_type <chr>, ada <lgl>
 
 This NYC’s metro system data is a 1868 x 32 size data, describing NYC
 metro system’s ***division, line, station\_name, station\_latitude,
@@ -206,24 +172,29 @@ The data is not beautiful in all sense:
 
 1.  It has route all over the place and name and line separated instead
     of treating as unique indentity;
-2.  staff hours including 3 types of information and etc.
+2.  value types in route\* were not consistent;
+3.  Boolean variable in *vending* and *entry* were in form of “YES”/“NO”
+    instead of boolean.
 
-So the first step I did to the data is to make the name unique. Then I
-took the information in the route\*: ffirst dealed with route 8 to 11
-which not consistant with the other line format of data and put them
-into route\_served variable using pivot\_longer(). Followed with
-changing values in *entrance* variable to boolean factors with
-if\_else() function. And finally selecting the required variables using
-select().
+So the first step I did to the data was to select required variables.
+Followed with changing values in *entrance* variable to boolean factors
+with if\_else() function. Then I took the information in the route\*:
+first dealed with route 8 to 11 which not consistent with the other line
+format of data and put them into *route* and *route\_value* variables
+using pivot\_longer(). To seperate
 
-The outcome data after piping is a dataset of 41096 x 10 size dataset,
-with variables of ***station\_id\_type, station\_id, division,
-station\_latitude, station\_longitude, route\_served, vending, entry,
+The outcome data after piping is a dataset of 1868 x 19 size dataset,
+with variables of ***line, station\_name, station\_latitude,
+station\_longitude, route1, route2, route3, route4, route5, route6,
+route7, route8, route9, route10, route11, vending, entry,
 entrance\_type, ada***, and the data with following properties:
 
-  - there’s 391 unique station (including names and line) in this data;
-  - Of 391, 63 are ADA compliant stations;
-  - Of 391, 0.03 station entrance/exits without vending allow entrance.
+  - there’s 465 unique station (including names and line) in this data;
+  - Of 1868, 468 are ADA compliant stations;
+  - Of 1868, 0.1 station entrance/exits without vending allow entrance.
+
+After transforming the NYC transit data, of 465 stations, 60 serve route
+A.
 
 # Problem 3
 

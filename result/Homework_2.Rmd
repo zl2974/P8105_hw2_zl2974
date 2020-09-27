@@ -113,45 +113,48 @@ for (i in 1:11){
 ```{r clean_nyc_data,warning=F,message=F}
 nyc_df = 
   read_nyc() %>% 
-  pivot_longer( #make unique names
-    cols = c(line,station_name),
-    names_to ='station_id_type',
-    values_to = "station_id",
-    names_prefix = "station_"
-  ) %>% 
-  relocate(station_id_type,station_id) %>% 
-  separate( #clean staff hour, just experiment
-    col = staff_hours,
-    into = c("staff_hours_start",'staff_hours_end','staff_hours_shift'),
-    sep = "[- ]"
-  ) %>% 
+  select(line:station_longitude,route1:route11,vending,entry,entrance_type,ada) %>% 
+  mutate(entry = if_else(
+    apply(as.matrix(entry),1,str_to_lower)=="yes",
+    TRUE,FALSE,NA),
+    vending = if_else(vending=="YES",T,F,NA)
+    )
+
+nyc_df_tidy = nyc_df %>% 
   mutate(across(matches('route'),as.character)) %>% #OR use across(matches("something",fun))
   relocate(route1:route11,.after = last_col()) %>% 
   pivot_longer( # clean route* variables to meaningful route variable
     cols = route1:route11, #route 8 is numeric
-    names_to = "route_served",
+    names_to = "route",
     values_to = 'route_value',
     names_prefix = 'route'
   ) %>% 
-  mutate(entry = if_else(apply(as.matrix(entry),1,str_to_lower)=="yes",TRUE,FALSE,NA)) %>% 
-  select(station_id_type:station_longitude,route_served,vending,entry,entrance_type,ada) %>% 
-  mutate(route_served = as.factor(route_served),vending = if_else(vending=="YES",T,F,NA))
-  skimr::skim_without_charts(nyc_df)
+  drop_na(route_value) %>%
+  mutate(
+    route_number = if_else(route_value %in% as.character(c(1:12)),route_value, ''),
+    route_name = if_else(route_number=='',route_value,''),
+    ) %>% 
+  select(-c(route_value,route))
+tail(nyc_df)
 ```
 This NYC's metro system data is a `r nrow(read_nyc())` x `r ncol(read_nyc())` size data, describing NYC metro system's **_`r paste(names(read_nyc()),sep = ',')`_**.
 
 The data is not beautiful in all sense: 
 
 1. It has route all over the place and name and line separated instead of treating as unique indentity;
-1. staff hours including 3 types of information and etc. 
+1. value types in route* were not consistent;
+1. Boolean variable in _vending_ and _entry_ were in form of "YES"/"NO" instead of boolean.
 
-So the first step I did to the data is to make the name unique. Then I took the information in the route*: ffirst dealed with route 8 to 11 which not consistant with the other line format of data and put them into route_served variable using pivot_longer(). Followed with changing values in _entrance_ variable to boolean factors with if_else() function. And finally selecting the required variables using select().
+So the first step I did to the data was to select required variables. Followed with changing values in _entrance_ variable to boolean factors with if_else() function. Then I took the information in the route\*: first dealed with route 8 to 11 which not consistent with the other line format of data and put them into _route_ and *route_value* variables using pivot_longer(). To seperate 
 
 The outcome data after piping is a dataset of `r nrow(nyc_df)` x `r ncol(nyc_df)` size dataset, with variables of **_`r names(nyc_df)`_**, and the data with following properties:
 
-* there's `r n_distinct(pull(nyc_df,"station_id"))` unique station (including names and line) in this data;
-* Of `r n_distinct(pull(nyc_df,"station_id"))`, `r sum(pull(distinct(nyc_df,station_id,.keep_all = TRUE),'ada'))` are ADA compliant stations;
-* Of `r n_distinct(pull(nyc_df,"station_id"))`, `r 1- round(sum(distinct(nyc_df,station_id,.keep_all = TRUE)$vending)/nrow(distinct(nyc_df,station_id,.keep_all = TRUE)),2)` station entrance/exits without vending allow entrance.
+* there's `r count(distinct(nyc_df,station_name,line))` unique station (including names and line) in this data;
+* Of `r nrow(nyc_df)`, `r sum(pull(nyc_df,'ada'))` are ADA compliant stations;
+* Of `r nrow(nyc_df)`, `r 1- round(sum(pull(nyc_df,vending))/nrow(nyc_df),2)` station entrance/exits without vending allow entrance.
+
+After transforming the NYC transit data, of `r count(distinct(nyc_df_tidy,station_name,line))` stations, 
+`r nyc_df_tidy %>% distinct(station_name,line,.keep_all=TRUE) %>% filter(route_name=="A") %>% count()` serve route A.
 
 \newpage
 # Problem 3
