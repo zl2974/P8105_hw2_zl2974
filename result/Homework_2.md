@@ -133,16 +133,11 @@ nyc_df_tidy = nyc_df %>%
   relocate(route1:route11,.after = last_col()) %>% 
   pivot_longer( # clean route* variables to meaningful route variable
     cols = route1:route11, #route 8 is numeric
-    names_to = "route",
-    values_to = 'route_value',
+    names_to = "route_name",
+    values_to = 'route_number',
     names_prefix = 'route'
   ) %>% 
-  drop_na(route_value) %>%
-  mutate(
-    route_number = if_else(route_value %in% as.character(c(1:12)),route_value, ''),
-    route_name = if_else(route_number=='',route_value,''),
-    ) %>% 
-  select(-c(route_value,route))
+  drop_na(route_number)
 tail(nyc_df)
 ```
 
@@ -180,8 +175,8 @@ So the first step I did to the data was to select required variables.
 Followed with changing values in *entrance* variable to boolean factors
 with if\_else() function. Then I took the information in the route\*:
 first dealed with route 8 to 11 which not consistent with the other line
-format of data and put them into *route* and *route\_value* variables
-using pivot\_longer(). To seperate
+format of data and put them into *route\_name* and *route\_number*
+variables using pivot\_longer(). To seperate
 
 The outcome data after piping is a dataset of 1868 x 19 size dataset,
 with variables of ***line, station\_name, station\_latitude,
@@ -199,6 +194,8 @@ A.
 # Problem 3
 
 ## Load data
+
+### Pols Month Data
 
 ``` r
 rm(list=ls())
@@ -240,8 +237,24 @@ str(pols_month)
     ##  $ rep_dem  : num [1:817] 198 198 198 198 198 198 198 198 198 198 ...
     ##  $ president: Factor w/ 2 levels "dem","gop": 1 1 1 1 1 1 1 1 1 1 ...
 
+First I loaded the Pols Month Data, the original data countains *mon,
+prez\_gop, gov\_gop, sen\_gop, rep\_gop, prez\_dem, gov\_dem, sen\_dem,
+rep\_dem* columns, in which *prez\_dem, prez\_gov* represent an
+indicator columns of which parties’ candidates were in charge of White
+House. The columns *gov\_dem,sen\_dem,rep\_dem* represent the number of
+governors, senators and representatives of Democrate Party and the
+others represent those of GOP. The data was record in the date of count
+on *date*. The data is in 822 x 9 dimention.
+
+ To make this data looks/works more tidy, I did the following: first I
+seperated *date* into *year,month,day* ,changing the *month* value into
+full name instead of number and keep the first two columns only. Second,
+*prez\_dem, prez\_gop* columns were melted together, keeping the *dem,
+gop* information in column names, their values to an indicator columns.
+And use filter to the indicator columns to selected the informative
+rows( that is president’s party of the record date).
+
 ``` r
-#load and clean snp data
 snp_data = read_five(3) %>% 
   separate(col = date,into = c("month","day","year"),"/") %>% 
   select(-day) %>% 

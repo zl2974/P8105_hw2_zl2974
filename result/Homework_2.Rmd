@@ -125,16 +125,11 @@ nyc_df_tidy = nyc_df %>%
   relocate(route1:route11,.after = last_col()) %>% 
   pivot_longer( # clean route* variables to meaningful route variable
     cols = route1:route11, #route 8 is numeric
-    names_to = "route",
-    values_to = 'route_value',
+    names_to = "route_name",
+    values_to = 'route_number',
     names_prefix = 'route'
   ) %>% 
-  drop_na(route_value) %>%
-  mutate(
-    route_number = if_else(route_value %in% as.character(c(1:12)),route_value, ''),
-    route_name = if_else(route_number=='',route_value,''),
-    ) %>% 
-  select(-c(route_value,route))
+  drop_na(route_number)
 tail(nyc_df)
 ```
 This NYC's metro system data is a `r nrow(read_nyc())` x `r ncol(read_nyc())` size data, describing NYC metro system's **_`r paste(names(read_nyc()),sep = ',')`_**.
@@ -145,7 +140,7 @@ The data is not beautiful in all sense:
 1. value types in route* were not consistent;
 1. Boolean variable in _vending_ and _entry_ were in form of "YES"/"NO" instead of boolean.
 
-So the first step I did to the data was to select required variables. Followed with changing values in _entrance_ variable to boolean factors with if_else() function. Then I took the information in the route\*: first dealed with route 8 to 11 which not consistent with the other line format of data and put them into _route_ and *route_value* variables using pivot_longer(). To seperate 
+So the first step I did to the data was to select required variables. Followed with changing values in _entrance_ variable to boolean factors with if_else() function. Then I took the information in the route\*: first dealed with route 8 to 11 which not consistent with the other line format of data and put them into *route_name* and *route_number* variables using pivot_longer(). To seperate 
 
 The outcome data after piping is a dataset of `r nrow(nyc_df)` x `r ncol(nyc_df)` size dataset, with variables of **_`r names(nyc_df)`_**, and the data with following properties:
 
@@ -154,11 +149,13 @@ The outcome data after piping is a dataset of `r nrow(nyc_df)` x `r ncol(nyc_df)
 * Of `r nrow(nyc_df)`, `r 1- round(sum(pull(nyc_df,vending))/nrow(nyc_df),2)` station entrance/exits without vending allow entrance.
 
 After transforming the NYC transit data, of `r count(distinct(nyc_df_tidy,station_name,line))` stations, 
-`r nyc_df_tidy %>% distinct(station_name,line,.keep_all=TRUE) %>% filter(route_name=="A") %>% count()` serve route A.
+`r nyc_df_tidy %>% distinct(station_name,line,.keep_all=TRUE) %>% filter(route_number=="A") %>% count()` serve route A.
 
 \newpage
 # Problem 3
 ## Load data
+### Pols Month Data
+
 ```{r load_five, message=F,warning=F}
 rm(list=ls())
 read_five = function(data_name_index = 1){
@@ -186,8 +183,18 @@ pols_month = read_five(1) %>%
   select(-c(president_boolean,day)) %>% 
   mutate(president = factor(president,levels = c('dem',"gop")))
 str(pols_month)
+```
 
-#load and clean snp data
+First I loaded the Pols Month Data, the original data countains *`r read_five(1) %>% names() %>% paste(sep=',')`* columns, in which *prez_dem, prez_gov* represent an indicator columns of
+which parties' candidates were in charge of White House. The columns *gov_dem,sen_dem,rep_dem*
+ represent the number of governors, senators and representatives of Democrate Party and the others represent those of GOP. The data was record in the date of count on *date*. The data is in `r paste(nrow(read_five(1))," x ",ncol(read_five(1)))` dimention.
+
+\ To make this data looks/works more tidy, I did the following: first I seperated *date* into _year,month,day_ ,changing the _month_ value into full name instead of number and keep the first two columns only. Second, *prez_dem, prez_gop* columns were melted together, keeping the *dem, gop* information in column names, their values to an indicator columns. 
+And use filter to the indicator columns to selected the informative rows( that is president's party of the record date).
+
+
+
+```{r load_and_clean_snp_data, message=F,warning=F}
 snp_data = read_five(3) %>% 
   separate(col = date,into = c("month","day","year"),"/") %>% 
   select(-day) %>% 
