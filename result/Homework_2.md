@@ -125,11 +125,13 @@ nyc_df =
   mutate(entry = if_else(
     apply(as.matrix(entry),1,str_to_lower)=="yes",
     TRUE,FALSE,NA),
-    vending = if_else(vending=="YES",T,F,NA)
+    vending = if_else(vending=="YES",T,F,NA),
+    #across(c("line","station_name"),function(x) str_replace_all(str_to_lower(x)," ",""))
     )
 
 nyc_df_tidy = nyc_df %>% 
-  mutate(across(matches('route'),as.character)) %>% #OR use across(matches("something",fun))
+  mutate(across(matches('route'),as.character)
+         )%>% #OR use across(matches("something",fun))
   relocate(route1:route11,.after = last_col()) %>% 
   pivot_longer( # clean route* variables to meaningful route variable
     cols = route1:route11, #route 8 is numeric
@@ -185,11 +187,12 @@ route7, route8, route9, route10, route11, vending, entry,
 entrance\_type, ada***, and the data with following properties:
 
   - there’s 465 unique station (including names and line) in this data;
-  - Of 1868, 468 are ADA compliant stations;
-  - Of 1868, 0.1 station entrance/exits without vending allow entrance.
+  - Of 1868 total stations, 468 are ADA compliant stations;
+  - Of 183 stations without vending, 0.38 stations’ entrance/exits
+    without vending allow entrance.
 
 After transforming the NYC transit data, of 465 stations, 60 serve route
-A.
+A. Among these stations, 17 are ADA compliant.
 
 # Problem 3
 
@@ -244,7 +247,7 @@ indicator columns of which parties’ candidates were in charge of White
 House. The columns *gov\_dem,sen\_dem,rep\_dem* represent the number of
 governors, senators and representatives of Democrate Party and the
 others represent those of GOP. The data was record in the date of count
-on *date*. The data is in 822 x 9 dimention.
+on *date*. The data is in 822 x 9 dimension.
 
  To make this data looks/works more tidy, I did the following: first I
 seperated *date* into *year,month,day* ,changing the *month* value into
@@ -252,7 +255,10 @@ full name instead of number and keep the first two columns only. Second,
 *prez\_dem, prez\_gop* columns were melted together, keeping the *dem,
 gop* information in column names, their values to an indicator columns.
 And use filter to the indicator columns to selected the informative
-rows( that is president’s party of the record date).
+rows( that is president’s party of the record date). And the final data
+is in 817 x 9 dimension.
+
+### SNP dataset
 
 ``` r
 snp_data = read_five(3) %>% 
@@ -270,8 +276,14 @@ str(snp_data)
     ##  $ month: chr [1:787] "July" "June" "May" "April" ...
     ##  $ close: num [1:787] 2080 2063 2107 2086 2068 ...
 
+Then the SNP dataset is loaded, same workflow was process: separating
+*date* in to *month,day,year*, translate the numeric *month* variable to
+character full name and drop *day* as required. After workflow, a 787 x
+3 dimension data is produced.
+
+### Unemployment dataset
+
 ``` r
-#load unemployment data
 unemploy_data = read_five(2) %>% 
   pivot_longer(
     jan:dec,
@@ -289,6 +301,13 @@ str(unemploy_data)
     ##  $ year         : num [1:816] 1948 1948 1948 1948 1948 ...
     ##  $ month        : chr [1:816] "January" "February" "March" "April" ...
     ##  $ unemploy_rate: num [1:816] 3.4 3.8 4 3.9 3.5 3.6 3.6 3.9 3.8 3.7 ...
+
+Finally the Unemployment dataset was taken and similar workflow
+implemented. First columns of *jan, feb, mar, apr, may, jun, jul, aug,
+sep, oct, nov, dec*, containing information of unemployment rate in the
+month, were melted into variable *month* and *unemploy\_rate*. Then the
+abbreviated month name was translated into full name for consistence. An
+816 \* 3 is produced.
 
 ## Join data
 

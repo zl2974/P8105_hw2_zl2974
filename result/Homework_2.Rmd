@@ -117,11 +117,13 @@ nyc_df =
   mutate(entry = if_else(
     apply(as.matrix(entry),1,str_to_lower)=="yes",
     TRUE,FALSE,NA),
-    vending = if_else(vending=="YES",T,F,NA)
+    vending = if_else(vending=="YES",T,F,NA),
+    #across(c("line","station_name"),function(x) str_replace_all(str_to_lower(x)," ",""))
     )
 
 nyc_df_tidy = nyc_df %>% 
-  mutate(across(matches('route'),as.character)) %>% #OR use across(matches("something",fun))
+  mutate(across(matches('route'),as.character)
+         )%>% #OR use across(matches("something",fun))
   relocate(route1:route11,.after = last_col()) %>% 
   pivot_longer( # clean route* variables to meaningful route variable
     cols = route1:route11, #route 8 is numeric
@@ -145,11 +147,12 @@ So the first step I did to the data was to select required variables. Followed w
 The outcome data after piping is a dataset of `r nrow(nyc_df)` x `r ncol(nyc_df)` size dataset, with variables of **_`r names(nyc_df)`_**, and the data with following properties:
 
 * there's `r count(distinct(nyc_df,station_name,line))` unique station (including names and line) in this data;
-* Of `r nrow(nyc_df)`, `r sum(pull(nyc_df,'ada'))` are ADA compliant stations;
-* Of `r nrow(nyc_df)`, `r 1- round(sum(pull(nyc_df,vending))/nrow(nyc_df),2)` station entrance/exits without vending allow entrance.
+* Of `r nrow(nyc_df)` total stations, `r sum(pull(nyc_df,'ada'))` are ADA compliant stations;
+* Of `r nrow(filter(nyc_df,!vending))` stations without vending, 
+`r round(nrow(filter(nyc_df,!vending,entry))/nrow(filter(nyc_df,!vending)),2)` stations' entrance/exits without vending allow entrance.
 
 After transforming the NYC transit data, of `r count(distinct(nyc_df_tidy,station_name,line))` stations, 
-`r nyc_df_tidy %>% distinct(station_name,line,.keep_all=TRUE) %>% filter(route_number=="A") %>% count()` serve route A.
+`r nyc_df_tidy %>% distinct(station_name,line,.keep_all=TRUE) %>% filter(route_number=="A") %>% count()` serve route A. Among these stations, `r nyc_df_tidy %>% distinct(station_name,line,.keep_all=TRUE) %>% filter(route_number=="A",ada) %>% count()` are ADA compliant.
 
 \newpage
 # Problem 3
@@ -187,13 +190,13 @@ str(pols_month)
 
 First I loaded the Pols Month Data, the original data countains *`r read_five(1) %>% names() %>% paste(sep=',')`* columns, in which *prez_dem, prez_gov* represent an indicator columns of
 which parties' candidates were in charge of White House. The columns *gov_dem,sen_dem,rep_dem*
- represent the number of governors, senators and representatives of Democrate Party and the others represent those of GOP. The data was record in the date of count on *date*. The data is in `r paste(nrow(read_five(1))," x ",ncol(read_five(1)))` dimention.
+ represent the number of governors, senators and representatives of Democrate Party and the others represent those of GOP. The data was record in the date of count on *date*. The data is in `r paste(nrow(read_five(1))," x ",ncol(read_five(1)))` dimension.
 
 \ To make this data looks/works more tidy, I did the following: first I seperated *date* into _year,month,day_ ,changing the _month_ value into full name instead of number and keep the first two columns only. Second, *prez_dem, prez_gop* columns were melted together, keeping the *dem, gop* information in column names, their values to an indicator columns. 
-And use filter to the indicator columns to selected the informative rows( that is president's party of the record date).
+And use filter to the indicator columns to selected the informative rows( that is president's party of the record date). And the final data is in `r paste(nrow(pols_month)," x ",ncol(pols_month))` dimension.
 
 
-
+### SNP dataset
 ```{r load_and_clean_snp_data, message=F,warning=F}
 snp_data = read_five(3) %>% 
   separate(col = date,into = c("month","day","year"),"/") %>% 
@@ -203,8 +206,12 @@ snp_data = read_five(3) %>%
          ) %>% 
   relocate(year,month)
 str(snp_data)
+```
 
-#load unemployment data
+Then the SNP dataset is loaded, same workflow was process: separating _date_ in to _month,day,year_, translate the numeric _month_ variable to character full name and drop _day_ as required. After workflow, a `r nrow(snp_data)` x `r ncol(snp_data)` dimension data is produced.
+
+### Unemployment dataset
+```{r load_and_clean_unemployment_data, message=F,warning=F}
 unemploy_data = read_five(2) %>% 
   pivot_longer(
     jan:dec,
@@ -217,6 +224,9 @@ unemploy_data = read_five(2) %>%
                          ]]))
 str(unemploy_data)
 ```
+
+Finally the Unemployment dataset was taken and similar workflow implemented. First columns of _`r select(read_five(2),jan:dec) %>% names()`_, containing information of unemployment rate in the month, were melted into variable _month_ and  _unemploy_rate_. Then the abbreviated month name was translated into full name for consistence. An `r nrow(unemploy_data)` * `r ncol(unemploy_data)` is produced.
+
 ## Join data
 ```{r}
 five30eight = pols_month %>% 
