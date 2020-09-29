@@ -78,8 +78,10 @@ preci_df =
          get('year') %in% c(2018,2017)
          ) %>% 
   mutate(month =
-           apply( # this is the apply() function in R, need to specific dim before giving function, weird
-             as.matrix(           # as.matrix is very important here, cuz pull() or get() have NULL dim()
+           apply( # this is the apply() function in R, need to specific dim before
+                  # giving function, weird
+             as.matrix(           # as.matrix is very important here, cuz 
+                                  # pull() or get() have NULL dim() because they are vector
              get("month")
              ), 1, # specific dim()
              function(x) month.name[[x]]) # this is how to write lambda in R, clean
@@ -102,7 +104,7 @@ tail(preci_df)
 
 # Problem 2
 
-## load data
+## Load data
 
 ``` r
 rm(list=ls())
@@ -113,7 +115,6 @@ return_data = read_csv(
   janitor::clean_names()
 return(return_data)
 }
-#skimr::skim_without_charts(nyc_df) # TODO: route* need to be in the same columns
 ```
 
 ## Clean data
@@ -126,7 +127,6 @@ nyc_df =
     apply(as.matrix(entry),1,str_to_lower)=="yes",
     TRUE,FALSE,NA),
     vending = if_else(vending=="YES",T,F,NA),
-    #across(c("line","station_name"),function(x) str_replace_all(str_to_lower(x)," ",""))
     )
 
 nyc_df_tidy = nyc_df %>% 
@@ -156,7 +156,7 @@ tail(nyc_df)
     ## #   route7 <chr>, route8 <dbl>, route9 <dbl>, route10 <dbl>, route11 <dbl>,
     ## #   vending <lgl>, entry <lgl>, entrance_type <chr>, ada <lgl>
 
-This NYC’s metro system data is a 1868 x 32 size data, describing NYC
+ This NYC’s metro system data is a 1868 x 32 size data, describing NYC
 metro system’s ***division, line, station\_name, station\_latitude,
 station\_longitude, route1, route2, route3, route4, route5, route6,
 route7, route8, route9, route10, route11, entrance\_type, entry,
@@ -165,7 +165,7 @@ free\_crossover, north\_south\_street, east\_west\_street, corner,
 entrance\_latitude, entrance\_longitude, station\_location,
 entrance\_location***.
 
-The data is not beautiful in all sense:
+ The data is not beautiful in all sense:
 
 1.  It has route all over the place and name and line separated instead
     of treating as unique indentity;
@@ -173,14 +173,14 @@ The data is not beautiful in all sense:
 3.  Boolean variable in *vending* and *entry* were in form of “YES”/“NO”
     instead of boolean.
 
-So the first step I did to the data was to select required variables.
+ So the first step I did to the data was to select required variables.
 Followed with changing values in *entrance* variable to boolean factors
 with if\_else() function. Then I took the information in the route\*:
 first dealed with route 8 to 11 which not consistent with the other line
 format of data and put them into *route\_name* and *route\_number*
 variables using pivot\_longer(). To seperate
 
-The outcome data after piping is a dataset of 1868 x 19 size dataset,
+ The outcome data after piping is a dataset of 1868 x 19 size dataset,
 with variables of ***line, station\_name, station\_latitude,
 station\_longitude, route1, route2, route3, route4, route5, route6,
 route7, route8, route9, route10, route11, vending, entry,
@@ -188,11 +188,11 @@ entrance\_type, ada***, and the data with following properties:
 
   - there’s 465 unique station (including names and line) in this data;
   - Of 1868 total stations, 468 are ADA compliant stations;
-  - Of 183 stations without vending, 0.38 stations’ entrance/exits
+  - Of 183 stations without vending, 0.377 stations’ entrance/exits
     without vending allow entrance.
 
-After transforming the NYC transit data, of 465 stations, 60 serve route
-A. Among these stations, 17 are ADA compliant.
+ After transforming the NYC transit data, of 465 stations, 60 serve
+route A. Among these stations, 17 are ADA compliant.
 
 # Problem 3
 
@@ -226,19 +226,18 @@ pols_month = read_five(1) %>%
   filter(president_boolean == 1) %>% 
   select(-c(president_boolean,day)) %>% 
   mutate(president = factor(president,levels = c('dem',"gop")))
-str(pols_month)
+tail(pols_month)
 ```
 
-    ## tibble [817 × 9] (S3: tbl_df/tbl/data.frame)
-    ##  $ year     : int [1:817] 1947 1947 1947 1947 1947 1947 1947 1947 1947 1947 ...
-    ##  $ month    : chr [1:817] "January" "February" "March" "April" ...
-    ##  $ gov_gop  : num [1:817] 23 23 23 23 23 23 23 23 23 23 ...
-    ##  $ sen_gop  : num [1:817] 51 51 51 51 51 51 51 51 51 51 ...
-    ##  $ rep_gop  : num [1:817] 253 253 253 253 253 253 253 253 253 253 ...
-    ##  $ gov_dem  : num [1:817] 23 23 23 23 23 23 23 23 23 23 ...
-    ##  $ sen_dem  : num [1:817] 45 45 45 45 45 45 45 45 45 45 ...
-    ##  $ rep_dem  : num [1:817] 198 198 198 198 198 198 198 198 198 198 ...
-    ##  $ president: Factor w/ 2 levels "dem","gop": 1 1 1 1 1 1 1 1 1 1 ...
+    ## # A tibble: 6 x 9
+    ##    year month    gov_gop sen_gop rep_gop gov_dem sen_dem rep_dem president
+    ##   <int> <chr>      <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl> <fct>    
+    ## 1  2015 January       31      54     245      18      44     188 dem      
+    ## 2  2015 February      31      54     245      18      44     188 dem      
+    ## 3  2015 March         31      54     245      18      44     188 dem      
+    ## 4  2015 April         31      54     244      18      44     188 dem      
+    ## 5  2015 May           31      54     245      18      44     188 dem      
+    ## 6  2015 June          31      54     246      18      44     188 dem
 
 First I loaded the Pols Month Data, the original data countains *mon,
 prez\_gop, gov\_gop, sen\_gop, rep\_gop, prez\_dem, gov\_dem, sen\_dem,
@@ -262,24 +261,31 @@ is in 817 x 9 dimension.
 
 ``` r
 snp_data = read_five(3) %>% 
-  separate(col = date,into = c("month","day","year"),"/") %>% 
-  select(-day) %>% 
-  mutate(across(.cols = year:month,as.numeric),
-         month = month.name[month]
-         ) %>% 
+  mutate(year = year(mdy(date)),
+         month = as.character(
+           month(mdy(date),label = TRUE, abbr=FALSE)
+           )
+         ) %>% #try to use some lubridate here
+  select(-date) %>% 
   relocate(year,month)
-str(snp_data)
+tail(snp_data)
 ```
 
-    ## tibble [787 × 3] (S3: tbl_df/tbl/data.frame)
-    ##  $ year : num [1:787] 2015 2015 2015 2015 2015 ...
-    ##  $ month: chr [1:787] "July" "June" "May" "April" ...
-    ##  $ close: num [1:787] 2080 2063 2107 2086 2068 ...
+    ## # A tibble: 6 x 3
+    ##    year month    close
+    ##   <dbl> <chr>    <dbl>
+    ## 1  1950 June      17.7
+    ## 2  1950 May       18.8
+    ## 3  1950 April     18.0
+    ## 4  1950 March     17.3
+    ## 5  1950 February  17.2
+    ## 6  1950 January   17.0
 
 Then the SNP dataset is loaded, same workflow was process: separating
 *date* in to *month,day,year*, translate the numeric *month* variable to
 character full name and drop *day* as required. After workflow, a 787 x
-3 dimension data is produced.
+3 dimension data is produced. The *close* variable record the closing
+values of the S\&P stock index on the associated date.
 
 ### Unemployment dataset
 
@@ -293,14 +299,23 @@ unemploy_data = read_five(2) %>%
   mutate(month = apply(as.matrix(month),1,
                        function(x) month.name[[
                          match(x,str_to_lower(month.abb))
-                         ]]))
-str(unemploy_data)
+                         ]])) #i can build a tibble of jan:dec mapping month.name to solve
+head(unemploy_data,10)
 ```
 
-    ## tibble [816 × 3] (S3: tbl_df/tbl/data.frame)
-    ##  $ year         : num [1:816] 1948 1948 1948 1948 1948 ...
-    ##  $ month        : chr [1:816] "January" "February" "March" "April" ...
-    ##  $ unemploy_rate: num [1:816] 3.4 3.8 4 3.9 3.5 3.6 3.6 3.9 3.8 3.7 ...
+    ## # A tibble: 10 x 3
+    ##     year month     unemploy_rate
+    ##    <dbl> <chr>             <dbl>
+    ##  1  1948 January             3.4
+    ##  2  1948 February            3.8
+    ##  3  1948 March               4  
+    ##  4  1948 April               3.9
+    ##  5  1948 May                 3.5
+    ##  6  1948 June                3.6
+    ##  7  1948 July                3.6
+    ##  8  1948 August              3.9
+    ##  9  1948 September           3.8
+    ## 10  1948 October             3.7
 
 Finally the Unemployment dataset was taken and similar workflow
 implemented. First columns of *jan, feb, mar, apr, may, jun, jul, aug,
@@ -315,8 +330,16 @@ abbreviated month name was translated into full name for consistence. An
 five30eight = pols_month %>% 
   left_join(snp_data, by = c("year","month")) %>% 
   left_join(unemploy_data, by = c("year","month"))
-skimr::skim_without_charts(five30eight)
 ```
+
+Joining all 3 datasets, a final 817 x 11 dataset is produced. Data is
+collected through 1947, 2015. The data collect number of senator,
+representative, governor of 2 parties and the party of presidency on
+date of data record as well as the closing values of the S\&P stock
+index on the associated date and the unemployment rate. These
+information is record in columns of *year, month, gov\_gop, sen\_gop,
+rep\_gop, gov\_dem, sen\_dem, rep\_dem, president, close,
+unemploy\_rate*. Detailed data descriptive is provided as followed.
 
 |                                                  |             |
 | :----------------------------------------------- | :---------- |

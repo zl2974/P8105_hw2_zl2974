@@ -7,6 +7,7 @@ output:
 ---
 ```{r setup ,echo = F, message= F}
 library(tidyverse)
+library(lubridate)
 ```
 
 # Problem 1 
@@ -69,8 +70,10 @@ preci_df =
          get('year') %in% c(2018,2017)
          ) %>% 
   mutate(month =
-           apply( # this is the apply() function in R, need to specific dim before giving function, weird
-             as.matrix(           # as.matrix is very important here, cuz pull() or get() have NULL dim()
+           apply( # this is the apply() function in R, need to specific dim before
+                  # giving function, weird
+             as.matrix(           # as.matrix is very important here, cuz 
+                                  # pull() or get() have NULL dim() because they are vector
              get("month")
              ), 1, # specific dim()
              function(x) month.name[[x]]) # this is how to write lambda in R, clean
@@ -85,7 +88,7 @@ tail(preci_df)
 \newpage
 # Problem 2
 
-## load data
+## Load data
 ```{r load_nyc,message=F,warning=F}
 rm(list=ls())
 read_nyc = function(){
@@ -95,7 +98,6 @@ return_data = read_csv(
   janitor::clean_names()
 return(return_data)
 }
-#skimr::skim_without_charts(nyc_df) # TODO: route* need to be in the same columns
 ```
 
 ## Clean data
@@ -103,10 +105,13 @@ return(return_data)
 nyc_df = read_nyc()
 for (i in 1:11){
   col_name = paste("route",i,sep='')
-  mutate(nyc_df,!!as.symbol(col_name) := as.character(pull(nyc_df,as.name(col_name))))
-  #use !! before variable to avoid evaluation, use := for dynamic name assigning
+  mutate(nyc_df,
+         !!as.symbol(col_name) :=
+           as.character(pull(nyc_df,as.name(col_name))))
+  # use !! before variable to avoid evaluation, use := for dynamic name assigning
   # I have to say, dplyr is readable, but pain in the ass from a computing perspective,
-  # one thing for sure that it would be great amount of work transferring dplyr script to other language
+  # one thing for sure that it would be great amount of work transferring dplyr script 
+  # to other language
 }
 ```
 
@@ -118,7 +123,6 @@ nyc_df =
     apply(as.matrix(entry),1,str_to_lower)=="yes",
     TRUE,FALSE,NA),
     vending = if_else(vending=="YES",T,F,NA),
-    #across(c("line","station_name"),function(x) str_replace_all(str_to_lower(x)," ",""))
     )
 
 nyc_df_tidy = nyc_df %>% 
@@ -134,25 +138,27 @@ nyc_df_tidy = nyc_df %>%
   drop_na(route_number)
 tail(nyc_df)
 ```
-This NYC's metro system data is a `r nrow(read_nyc())` x `r ncol(read_nyc())` size data, describing NYC metro system's **_`r paste(names(read_nyc()),sep = ',')`_**.
 
-The data is not beautiful in all sense: 
+\ This NYC's metro system data is a `r nrow(read_nyc())` x `r ncol(read_nyc())` size data, describing NYC metro system's **_`r paste(names(read_nyc()),sep = ',')`_**.
+
+\ The data is not beautiful in all sense: 
 
 1. It has route all over the place and name and line separated instead of treating as unique indentity;
 1. value types in route* were not consistent;
 1. Boolean variable in _vending_ and _entry_ were in form of "YES"/"NO" instead of boolean.
 
-So the first step I did to the data was to select required variables. Followed with changing values in _entrance_ variable to boolean factors with if_else() function. Then I took the information in the route\*: first dealed with route 8 to 11 which not consistent with the other line format of data and put them into *route_name* and *route_number* variables using pivot_longer(). To seperate 
+\ So the first step I did to the data was to select required variables. Followed with changing values in _entrance_ variable to boolean factors with if_else() function. Then I took the information in the route\*: first dealed with route 8 to 11 which not consistent with the other line format of data and put them into *route_name* and *route_number* variables using pivot_longer(). To seperate 
 
-The outcome data after piping is a dataset of `r nrow(nyc_df)` x `r ncol(nyc_df)` size dataset, with variables of **_`r names(nyc_df)`_**, and the data with following properties:
+\ The outcome data after piping is a dataset of `r nrow(nyc_df)` x `r ncol(nyc_df)` size dataset, with variables of **_`r names(nyc_df)`_**, and the data with following properties:
 
 * there's `r count(distinct(nyc_df,station_name,line))` unique station (including names and line) in this data;
 * Of `r nrow(nyc_df)` total stations, `r sum(pull(nyc_df,'ada'))` are ADA compliant stations;
 * Of `r nrow(filter(nyc_df,!vending))` stations without vending, 
-`r round(nrow(filter(nyc_df,!vending,entry))/nrow(filter(nyc_df,!vending)),2)` stations' entrance/exits without vending allow entrance.
+`r round(nrow(filter(nyc_df,!vending,entry))/nrow(filter(nyc_df,!vending)),3)` stations' entrance/exits without vending allow entrance.
 
-After transforming the NYC transit data, of `r count(distinct(nyc_df_tidy,station_name,line))` stations, 
-`r nyc_df_tidy %>% distinct(station_name,line,.keep_all=TRUE) %>% filter(route_number=="A") %>% count()` serve route A. Among these stations, `r nyc_df_tidy %>% distinct(station_name,line,.keep_all=TRUE) %>% filter(route_number=="A",ada) %>% count()` are ADA compliant.
+\ After transforming the NYC transit data, of `r count(distinct(nyc_df_tidy,station_name,line))` stations, 
+`r nyc_df_tidy %>% distinct(station_name,line,.keep_all=TRUE) %>% filter(route_number=="A") %>% count()` serve route A. Among these stations, 
+`r nyc_df_tidy %>% distinct(station_name,line,.keep_all=TRUE) %>% filter(route_number=="A",ada) %>% count()` are ADA compliant.
 
 \newpage
 # Problem 3
@@ -185,7 +191,7 @@ pols_month = read_five(1) %>%
   filter(president_boolean == 1) %>% 
   select(-c(president_boolean,day)) %>% 
   mutate(president = factor(president,levels = c('dem',"gop")))
-str(pols_month)
+tail(pols_month)
 ```
 
 First I loaded the Pols Month Data, the original data countains *`r read_five(1) %>% names() %>% paste(sep=',')`* columns, in which *prez_dem, prez_gov* represent an indicator columns of
@@ -199,16 +205,17 @@ And use filter to the indicator columns to selected the informative rows( that i
 ### SNP dataset
 ```{r load_and_clean_snp_data, message=F,warning=F}
 snp_data = read_five(3) %>% 
-  separate(col = date,into = c("month","day","year"),"/") %>% 
-  select(-day) %>% 
-  mutate(across(.cols = year:month,as.numeric),
-         month = month.name[month]
-         ) %>% 
+  mutate(year = year(mdy(date)),
+         month = as.character(
+           month(mdy(date),label = TRUE, abbr=FALSE)
+           )
+         ) %>% #try to use some lubridate here
+  select(-date) %>% 
   relocate(year,month)
-str(snp_data)
+tail(snp_data)
 ```
 
-Then the SNP dataset is loaded, same workflow was process: separating _date_ in to _month,day,year_, translate the numeric _month_ variable to character full name and drop _day_ as required. After workflow, a `r nrow(snp_data)` x `r ncol(snp_data)` dimension data is produced.
+Then the SNP dataset is loaded, same workflow was process: separating _date_ in to _month,day,year_, translate the numeric _month_ variable to character full name and drop _day_ as required. After workflow, a `r nrow(snp_data)` x `r ncol(snp_data)` dimension data is produced. The _close_ variable record the closing values of the S&P stock index on the associated date.
 
 ### Unemployment dataset
 ```{r load_and_clean_unemployment_data, message=F,warning=F}
@@ -221,8 +228,8 @@ unemploy_data = read_five(2) %>%
   mutate(month = apply(as.matrix(month),1,
                        function(x) month.name[[
                          match(x,str_to_lower(month.abb))
-                         ]]))
-str(unemploy_data)
+                         ]])) #i can build a tibble of jan:dec mapping month.name to solve
+head(unemploy_data,10)
 ```
 
 Finally the Unemployment dataset was taken and similar workflow implemented. First columns of _`r select(read_five(2),jan:dec) %>% names()`_, containing information of unemployment rate in the month, were melted into variable _month_ and  _unemploy_rate_. Then the abbreviated month name was translated into full name for consistence. An `r nrow(unemploy_data)` * `r ncol(unemploy_data)` is produced.
@@ -232,6 +239,8 @@ Finally the Unemployment dataset was taken and similar workflow implemented. Fir
 five30eight = pols_month %>% 
   left_join(snp_data, by = c("year","month")) %>% 
   left_join(unemploy_data, by = c("year","month"))
-skimr::skim_without_charts(five30eight)
 ```
 
+Joining all 3 datasets, a final `r paste(nrow(five30eight),"x",ncol(five30eight))` dataset is produced. Data is collected through `r paste(range(pull(five30eight,year)),sep=" to ")`. The data collect number of senator, representative, governor of 2 parties and the party of presidency on date of data record as well as the closing values of the S&P stock index on the associated date and the unemployment rate. These information is record in columns of _`r names(five30eight)`_. Detailed data descriptive is provided as followed.
+
+`r skimr::skim_without_charts(five30eight)`
