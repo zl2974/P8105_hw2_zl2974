@@ -9,10 +9,10 @@ Jeffrey Liang
 
 ``` r
 data_collection = c() #Load the wheel data
-for (i in c(1:3)){
+for (i in c(1:3)) {
   data_collection[[i]] = 
     readxl::read_excel(
-      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep=''),
+      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep = ''),
       skip = 1, 
       sheet = i
     ) %>% 
@@ -23,15 +23,15 @@ for (i in c(1:3)){
 wheel_df = bind_rows(data_collection)
 
 preci_collection = c() # load the precipitation data in wheel
-for (i in c(4:9)){
+for (i in c(4:9)) {
   preci_collection[[i]] = 
     readxl::read_excel(
-      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep=''),
+      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep = ''),
       skip = 1,
       sheet = i
     ) %>% 
     janitor::clean_names() %>% 
-    mutate(year = 2020 + 3 -i)
+    mutate(year = 2020 + 3 - i)
 }
 
 preci_df = bind_rows(preci_collection)
@@ -131,7 +131,7 @@ nyc_df =
 
 nyc_df_tidy = nyc_df %>% 
   mutate(across(matches('route'),as.character)
-         )%>% #OR use across(matches("something",fun))
+         ) %>% #OR use across(matches("something",fun))
   relocate(route1:route11,.after = last_col()) %>% 
   pivot_longer( # clean route* variables to meaningful route variable
     cols = route1:route11, #route 8 is numeric
@@ -187,8 +187,8 @@ route7, route8, route9, route10, route11, vending, entry,
 entrance\_type, ada***, and the data with following properties:
 
   - there’s 465 unique station (including names and line) in this data;
-  - Of 1868 total stations, 468 are ADA compliant stations;
-  - Of 183 stations without vending, 0.377 stations’ entrance/exits
+  - Of 465 total stations, 84 are ADA compliant stations;
+  - Of 183 stations without vending, 37.7% stations’ entrance/exits
     without vending allow entrance.
 
  After transforming the NYC transit data, of 465 stations, 60 serve
@@ -221,9 +221,9 @@ pols_month = read_five(1) %>%
     c("prez_gop","prez_dem"),
     names_to = "president",
     values_to = "president_boolean",
-    names_prefix="prez_"
+    names_prefix = "prez_"
   ) %>% 
-  filter(president_boolean == 1) %>% 
+  filter(president_boolean != 0) %>% 
   select(-c(president_boolean,day)) %>% 
   mutate(president = factor(president,levels = c('dem',"gop")))
 tail(pols_month)
@@ -239,23 +239,23 @@ tail(pols_month)
     ## 5  2015 May           31      54     245      18      44     188 dem      
     ## 6  2015 June          31      54     246      18      44     188 dem
 
-First I loaded the Pols Month Data, the original data countains *mon,
+First I loaded the Pols Month Data, the original data contains *mon,
 prez\_gop, gov\_gop, sen\_gop, rep\_gop, prez\_dem, gov\_dem, sen\_dem,
 rep\_dem* columns, in which *prez\_dem, prez\_gov* represent an
 indicator columns of which parties’ candidates were in charge of White
 House. The columns *gov\_dem,sen\_dem,rep\_dem* represent the number of
-governors, senators and representatives of Democrate Party and the
-others represent those of GOP. The data was record in the date of count
-on *date*. The data is in 822 x 9 dimension.
+governors, senators and representatives of Democrat Party and the others
+represent those of GOP. The data was record in the date of count on
+*date*. The data is in 822 x 9 dimension.
 
  To make this data looks/works more tidy, I did the following: first I
-seperated *date* into *year,month,day* ,changing the *month* value into
+separated *date* into *year,month,day* ,changing the *month* value into
 full name instead of number and keep the first two columns only. Second,
 *prez\_dem, prez\_gop* columns were melted together, keeping the *dem,
 gop* information in column names, their values to an indicator columns.
 And use filter to the indicator columns to selected the informative
 rows( that is president’s party of the record date). And the final data
-is in 817 x 9 dimension.
+is in 822 x 9 dimension.
 
 ### SNP dataset
 
@@ -332,7 +332,7 @@ five30eight = pols_month %>%
   left_join(unemploy_data, by = c("year","month"))
 ```
 
-Joining all 3 datasets, a final 817 x 11 dataset is produced. Data is
+Joining all 3 datasets, a final 822 x 11 dataset is produced. Data is
 collected through 1947, 2015. The data collect number of senator,
 representative, governor of 2 parties and the party of presidency on
 date of data record as well as the closing values of the S\&P stock
@@ -344,7 +344,7 @@ unemploy\_rate*. Detailed data descriptive is provided as followed.
 |                                                  |             |
 | :----------------------------------------------- | :---------- |
 | Name                                             | five30eight |
-| Number of rows                                   | 817         |
+| Number of rows                                   | 822         |
 | Number of columns                                | 11          |
 | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_   |             |
 | Column type frequency:                           |             |
@@ -366,18 +366,18 @@ Data summary
 
 | skim\_variable | n\_missing | complete\_rate | ordered | n\_unique | top\_counts        |
 | :------------- | ---------: | -------------: | :------ | --------: | :----------------- |
-| president      |          0 |              1 | FALSE   |         2 | gop: 427, dem: 390 |
+| president      |          0 |              1 | FALSE   |         2 | gop: 432, dem: 390 |
 
 **Variable type: numeric**
 
-| skim\_variable | n\_missing | complete\_rate |    mean |     sd |      p0 |    p25 |     p50 |     p75 |    p100 |
-| :------------- | ---------: | -------------: | ------: | -----: | ------: | -----: | ------: | ------: | ------: |
-| year           |          0 |           1.00 | 1980.79 |  19.84 | 1947.00 | 1964.0 | 1981.00 | 1998.00 | 2015.00 |
-| gov\_gop       |          0 |           1.00 |   22.50 |   5.69 |   12.00 |   18.0 |   22.00 |   28.00 |   34.00 |
-| sen\_gop       |          0 |           1.00 |   46.10 |   6.40 |   32.00 |   42.0 |   46.00 |   51.00 |   56.00 |
-| rep\_gop       |          0 |           1.00 |  194.92 |  29.33 |  141.00 |  176.0 |  195.00 |  222.00 |  253.00 |
-| gov\_dem       |          0 |           1.00 |   27.16 |   5.93 |   17.00 |   22.0 |   28.00 |   32.00 |   41.00 |
-| sen\_dem       |          0 |           1.00 |   54.38 |   7.38 |   44.00 |   48.0 |   53.00 |   58.00 |   71.00 |
-| rep\_dem       |          0 |           1.00 |  244.94 |  31.46 |  188.00 |  211.0 |  250.00 |  268.00 |  301.00 |
-| close          |         36 |           0.96 |  475.43 | 544.07 |   17.05 |   84.3 |  140.64 |  947.28 | 2107.39 |
-| unemploy\_rate |         12 |           0.99 |    5.83 |   1.65 |    2.50 |    4.6 |    5.60 |    6.90 |   10.80 |
+| skim\_variable | n\_missing | complete\_rate |    mean |     sd |      p0 |     p25 |     p50 |     p75 |    p100 |
+| :------------- | ---------: | -------------: | ------: | -----: | ------: | ------: | ------: | ------: | ------: |
+| year           |          0 |           1.00 | 1980.75 |  19.79 | 1947.00 | 1964.00 | 1981.00 | 1998.00 | 2015.00 |
+| gov\_gop       |          0 |           1.00 |   22.48 |   5.68 |   12.00 |   18.00 |   22.00 |   28.00 |   34.00 |
+| sen\_gop       |          0 |           1.00 |   46.10 |   6.38 |   32.00 |   42.00 |   46.00 |   51.00 |   56.00 |
+| rep\_gop       |          0 |           1.00 |  194.92 |  29.24 |  141.00 |  176.00 |  195.00 |  222.00 |  253.00 |
+| gov\_dem       |          0 |           1.00 |   27.20 |   5.94 |   17.00 |   22.00 |   28.00 |   32.00 |   41.00 |
+| sen\_dem       |          0 |           1.00 |   54.41 |   7.37 |   44.00 |   48.00 |   53.00 |   58.00 |   71.00 |
+| rep\_dem       |          0 |           1.00 |  244.97 |  31.37 |  188.00 |  211.00 |  250.00 |  268.00 |  301.00 |
+| close          |         36 |           0.96 |  472.85 | 543.29 |   17.05 |   83.67 |  137.26 |  932.06 | 2107.39 |
+| unemploy\_rate |         12 |           0.99 |    5.83 |   1.65 |    2.50 |    4.70 |    5.60 |    6.90 |   10.80 |

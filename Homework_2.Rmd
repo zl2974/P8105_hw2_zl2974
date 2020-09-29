@@ -15,10 +15,10 @@ library(lubridate)
 ## Load Wheel data
 ```{r load_whell_data, warning=F, message=FALSE}
 data_collection = c() #Load the wheel data
-for (i in c(1:3)){
+for (i in c(1:3)) {
   data_collection[[i]] = 
     readxl::read_excel(
-      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep=''),
+      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep = ''),
       skip = 1, 
       sheet = i
     ) %>% 
@@ -29,15 +29,15 @@ for (i in c(1:3)){
 wheel_df = bind_rows(data_collection)
 
 preci_collection = c() # load the precipitation data in wheel
-for (i in c(4:9)){
+for (i in c(4:9)) {
   preci_collection[[i]] = 
     readxl::read_excel(
-      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep=''),
+      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep = ''),
       skip = 1,
       sheet = i
     ) %>% 
     janitor::clean_names() %>% 
-    mutate(year = 2020 + 3 -i)
+    mutate(year = 2020 + 3 - i)
 }
 
 preci_df = bind_rows(preci_collection)
@@ -127,7 +127,7 @@ nyc_df =
 
 nyc_df_tidy = nyc_df %>% 
   mutate(across(matches('route'),as.character)
-         )%>% #OR use across(matches("something",fun))
+         ) %>% #OR use across(matches("something",fun))
   relocate(route1:route11,.after = last_col()) %>% 
   pivot_longer( # clean route* variables to meaningful route variable
     cols = route1:route11, #route 8 is numeric
@@ -152,9 +152,9 @@ tail(nyc_df)
 \ The outcome data after piping is a dataset of `r nrow(nyc_df)` x `r ncol(nyc_df)` size dataset, with variables of **_`r names(nyc_df)`_**, and the data with following properties:
 
 * there's `r count(distinct(nyc_df,station_name,line))` unique station (including names and line) in this data;
-* Of `r nrow(nyc_df)` total stations, `r sum(pull(nyc_df,'ada'))` are ADA compliant stations;
+* Of `r count(distinct(nyc_df,station_name,line))` total stations, `r sum(pull(distinct(nyc_df,station_name,line,.keep_all=T),'ada'))` are ADA compliant stations;
 * Of `r nrow(filter(nyc_df,!vending))` stations without vending, 
-`r round(nrow(filter(nyc_df,!vending,entry))/nrow(filter(nyc_df,!vending)),3)` stations' entrance/exits without vending allow entrance.
+`r round(nrow(filter(nyc_df,!vending,entry))/nrow(filter(nyc_df,!vending)),3)*100`% stations' entrance/exits without vending allow entrance.
 
 \ After transforming the NYC transit data, of `r count(distinct(nyc_df_tidy,station_name,line))` stations, 
 `r nyc_df_tidy %>% distinct(station_name,line,.keep_all=TRUE) %>% filter(route_number=="A") %>% count()` serve route A. Among these stations, 
@@ -186,19 +186,19 @@ pols_month = read_five(1) %>%
     c("prez_gop","prez_dem"),
     names_to = "president",
     values_to = "president_boolean",
-    names_prefix="prez_"
+    names_prefix = "prez_"
   ) %>% 
-  filter(president_boolean == 1) %>% 
+  filter(president_boolean != 0) %>% 
   select(-c(president_boolean,day)) %>% 
   mutate(president = factor(president,levels = c('dem',"gop")))
 tail(pols_month)
 ```
 
-First I loaded the Pols Month Data, the original data countains *`r read_five(1) %>% names() %>% paste(sep=',')`* columns, in which *prez_dem, prez_gov* represent an indicator columns of
+First I loaded the Pols Month Data, the original data contains *`r read_five(1) %>% names() %>% paste(sep=',')`* columns, in which *prez_dem, prez_gov* represent an indicator columns of
 which parties' candidates were in charge of White House. The columns *gov_dem,sen_dem,rep_dem*
- represent the number of governors, senators and representatives of Democrate Party and the others represent those of GOP. The data was record in the date of count on *date*. The data is in `r paste(nrow(read_five(1))," x ",ncol(read_five(1)))` dimension.
+ represent the number of governors, senators and representatives of Democrat Party and the others represent those of GOP. The data was record in the date of count on *date*. The data is in `r paste(nrow(read_five(1))," x ",ncol(read_five(1)))` dimension.
 
-\ To make this data looks/works more tidy, I did the following: first I seperated *date* into _year,month,day_ ,changing the _month_ value into full name instead of number and keep the first two columns only. Second, *prez_dem, prez_gop* columns were melted together, keeping the *dem, gop* information in column names, their values to an indicator columns. 
+\ To make this data looks/works more tidy, I did the following: first I separated *date* into _year,month,day_ ,changing the _month_ value into full name instead of number and keep the first two columns only. Second, *prez_dem, prez_gop* columns were melted together, keeping the *dem, gop* information in column names, their values to an indicator columns. 
 And use filter to the indicator columns to selected the informative rows( that is president's party of the record date). And the final data is in `r paste(nrow(pols_month)," x ",ncol(pols_month))` dimension.
 
 
