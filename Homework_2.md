@@ -332,14 +332,26 @@ five30eight = pols_month %>%
   left_join(unemploy_data, by = c("year","month"))
 ```
 
-Joining all 3 datasets, a final 822 x 11 dataset is produced. Data is
+ Joining all 3 datasets, a final 822 x 11 dataset is produced. Data is
 collected through 1947, 2015. The data collect number of senator,
 representative, governor of 2 parties and the party of presidency on
 date of data record as well as the closing values of the S\&P stock
 index on the associated date and the unemployment rate. These
 information is record in columns of *year, month, gov\_gop, sen\_gop,
 rep\_gop, gov\_dem, sen\_dem, rep\_dem, president, close,
-unemploy\_rate*. Detailed data descriptive is provided as followed.
+unemploy\_rate*.
+
+ The president take the value of “dem” vs “gop” and during the time,
+47.45% of the time is run by DEM party.
+
+ During the time, the means of the number of GOP party’s governor,
+senator and representitives are 22.48, 46.1 and 194.92 .
+
+ And those numbers of the DEM party are 27.2, 54.41 and 244.97
+
+ Unemployment rate fluctuates around 2.5 % to 10.8%.
+
+ Detailed data descriptive is provided as followed:
 
 |                                                  |             |
 | :----------------------------------------------- | :---------- |

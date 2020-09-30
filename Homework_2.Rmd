@@ -241,6 +241,16 @@ five30eight = pols_month %>%
   left_join(unemploy_data, by = c("year","month"))
 ```
 
-Joining all 3 datasets, a final `r paste(nrow(five30eight),"x",ncol(five30eight))` dataset is produced. Data is collected through `r paste(range(pull(five30eight,year)),sep=" to ")`. The data collect number of senator, representative, governor of 2 parties and the party of presidency on date of data record as well as the closing values of the S&P stock index on the associated date and the unemployment rate. These information is record in columns of _`r names(five30eight)`_. Detailed data descriptive is provided as followed.
+\ Joining all 3 datasets, a final `r paste(nrow(five30eight),"x",ncol(five30eight))` dataset is produced. Data is collected through `r paste(range(pull(five30eight,year)),sep=" to ")`. The data collect number of senator, representative, governor of 2 parties and the party of presidency on date of data record as well as the closing values of the S&P stock index on the associated date and the unemployment rate. These information is record in columns of _`r names(five30eight)`_. 
+
+\ The president take the value of "dem" vs "gop" and during the time, `r round(nrow(five30eight %>% filter(match(president,'dem')==1))/nrow(five30eight)*100,2)`% of the time is run by DEM party.
+
+\ During the time, the means of the number of GOP party's governor, senator and representitives are `r round(mean(pull(five30eight,gov_gop)),2)`, `r round(mean(pull(five30eight,sen_gop)),2)` and `r round(mean(pull(five30eight,rep_gop)),2)` .
+
+\ And those numbers of the DEM party are `r round(mean(pull(five30eight,gov_dem)),2)`, `r round(mean(pull(five30eight,sen_dem)),2)` and `r round(mean(pull(five30eight,rep_dem)),2)`
+
+\ Unemployment rate fluctuates around `r  paste(min(pull(five30eight,unemploy_rate),na.rm=T),"% to",max(pull(five30eight,unemploy_rate),na.rm=T))`%.
+
+\ Detailed data descriptive is provided as followed:
 
 `r skimr::skim_without_charts(five30eight)`
