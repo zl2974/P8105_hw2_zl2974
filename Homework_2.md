@@ -12,7 +12,9 @@ data_collection = c() #Load the wheel data
 for (i in c(1:3)) {
   data_collection[[i]] = 
     readxl::read_excel(
-      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep = ''),
+      paste(here::here(),
+            "/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",
+            sep = ''),
       skip = 1, 
       sheet = i
     ) %>% 
@@ -26,7 +28,9 @@ preci_collection = c() # load the precipitation data in wheel
 for (i in c(4:9)) {
   preci_collection[[i]] = 
     readxl::read_excel(
-      paste(here::here(),"/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sep = ''),
+      paste(here::here(),
+            "/data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",
+            sep = ''),
       skip = 1,
       sheet = i
     ) %>% 
@@ -45,12 +49,15 @@ rm(data_collection,preci_collection)
 wheel_df = #clean wheel
   wheel_df %>% 
   filter(
-    #!grep(" Total",get('month')), #this command return vector with null row, so the data can't subset
-    !str_detect(get("month")," Total"),
+
+    !str_detect(get("month")," Total"),    # !grep(" Total",get('month')), 
+                                           # this command return vector with null row, 
+                                           # so the data can't subset
     !is.na(get("dumpster")) #Or drop_na(dumpster)
     ) %>% 
   mutate(sports_balls = 
-           as.integer(round(get("sports_balls")))
+           as.integer(
+             round(get("sports_balls")))
          )
 tail(wheel_df)
 ```
@@ -110,7 +117,9 @@ tail(preci_df)
 rm(list=ls())
 read_nyc = function(){
 return_data = read_csv(
-  paste(here::here(),"/data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",sep = '')
+  paste(here::here(),
+        "/data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
+        sep = '')
 ) %>% 
   janitor::clean_names()
 return(return_data)
@@ -122,15 +131,24 @@ return(return_data)
 ``` r
 nyc_df = 
   read_nyc() %>% 
-  select(line:station_longitude,route1:route11,vending,entry,entrance_type,ada) %>% 
+  select(line:station_longitude,
+         route1:route11,
+         vending,entry,entrance_type,ada) %>% 
   mutate(entry = if_else(
     apply(as.matrix(entry),1,str_to_lower)=="yes",
-    TRUE,FALSE,NA),
-    vending = if_else(vending=="YES",T,F,NA),
+    TRUE,
+    FALSE,
+    NA),
+    vending = 
+      if_else(vending=="YES",T,F,NA),
     )
 
 nyc_df_tidy = nyc_df %>% 
-  mutate(across(matches('route'),as.character)
+  mutate(
+    across(
+      matches('route'),
+      as.character
+      )
          ) %>% #OR use across(matches("something",fun))
   relocate(route1:route11,.after = last_col()) %>% 
   pivot_longer( # clean route* variables to meaningful route variable
@@ -203,9 +221,14 @@ route A. Among these stations, 17 are ADA compliant.
 ``` r
 rm(list=ls())
 read_five = function(data_name_index = 1){
-  data_name = str_c(c("pols-month",'unemployment',"snp"),".csv")
+  data_name = 
+    str_c(c("pols-month",'unemployment',"snp"),
+          ".csv")
   read_data = 
-    read_csv(paste(here::here(),"/data/fivethirtyeight_datasets/",data_name[[data_name_index]],sep=''),
+    read_csv(paste(here::here(),
+                   "/data/fivethirtyeight_datasets/",
+                   data_name[[data_name_index]],
+                   sep=''),
              ) %>% 
     janitor::clean_names()
 }
@@ -213,9 +236,17 @@ read_five = function(data_name_index = 1){
 #load month data
 pols_month = read_five(1) %>% 
   separate(mon,c("year","month",'day'),"-") %>% 
-  mutate(across(.cols = year:day,as.integer)) %>% 
-  left_join(tibble(month = 1:12,month_name = month.name)) %>% 
-  mutate(month = month_name) %>% 
+  mutate(
+    across(.cols = year:day,as.integer)
+    ) %>% 
+  left_join(
+    tibble(
+      month = 1:12,
+      month_name = month.name)
+    ) %>% 
+  mutate(
+    month = month_name
+    ) %>% 
   select(-month_name) %>% 
   pivot_longer( # OR mutate president = 
     c("prez_gop","prez_dem"),
@@ -225,7 +256,11 @@ pols_month = read_five(1) %>%
   ) %>% 
   filter(president_boolean != 0) %>% 
   select(-c(president_boolean,day)) %>% 
-  mutate(president = factor(president,levels = c('dem',"gop")))
+  mutate(
+    president = 
+      factor(president,
+             levels = c('dem',"gop"))
+    )
 tail(pols_month)
 ```
 
